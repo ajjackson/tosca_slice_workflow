@@ -11,8 +11,6 @@ from euphonic.spectra import (
     apply_kinematic_constraints,
 )
 from numpy.polynomial import Polynomial
-from snakemake.script import snakemake
-
 
 # Instrument parameters
 TOSCA_E_F = 3.97 * ureg("meV")
