@@ -6,9 +6,6 @@ from euphonic.spectra import (
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 
-from snakemake.script import snakemake
-
-
 cmap = snakemake.params["cmap"]
 
 full = Spectrum2D.from_json_file(snakemake.input["full_spectrum"])
