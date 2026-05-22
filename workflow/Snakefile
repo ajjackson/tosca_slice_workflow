@@ -1,0 +1,98 @@
+from pathlib import Path
+from typing import NamedTuple
+
+from namedtuple_table import NamedTupleTable
+
+sim_table = NamedTupleTable.from_tsv(Path("config/sim_data.tsv"))
+labels = sim_table.keys()
+
+configfile: "config/config.yaml"
+
+rule all:
+    input:
+        expand("results/tosca-slice-{label}.pdf", label=labels),
+
+def select(table: NamedTupleTable, **kwargs: dict[str, str]) -> NamedTupleTable:
+    """Get rows from table that match kwargs"""
+    def matches(row: NamedTuple) -> bool:
+        for key, value in kwargs.items():
+            if getattr(row, key) != value:
+                return False
+        return True
+
+    rows = filter(matches, table.values())
+    return NamedTupleTable(rows, index=table._index)
+
+
+def select_one(table: NamedTupleTable, **kwargs: dict[str, str]) -> NamedTuple:
+    return next(iter(select(table, **kwargs).values()))
+
+
+def get_fc_file(wildcards):
+    return sim_table[wildcards.label].force_constants
+
+
+def get_powder_params(wildcards):
+    return config["powder_params"][sim_table[wildcards.label].system]
+
+
+def get_v_max(wildcards) -> float | None:
+    return config["v_max"].get(sim_table[wildcards.label].system)
+
+
+def get_abins_qpt_cutoff(wildcards) -> float:
+    if (system := sim_table[wildcards.label].system) in (qpt_config := config["abins"]["qpt_cutoff"]):
+        return float(qpt_config[system])
+    return float(qpt_config["default"])
+
+
+rule calculate_powder:
+    input:
+        get_fc_file,
+    output:
+        "results/{label}-powder-sim.json",
+    params:
+        get_powder_params,
+    threads: workflow.cores
+    conda:
+        "envs/euphonic.yml"
+    shell:
+        """
+        euphonic-powder-map {input[0]} --save-json {output[0]} \
+        --no-widgets --save-to /tmp/tmp.png \
+          --q-min=0 --q-max={params[0][q_max]} --q-spacing={params[0][q_spacing]} \
+          --q-broadening={params[0][q_broadening]} \
+          --npts={params[0][npts]} --ebins={params[0][ebins]} \
+          --weighting=coherent --temperature={params[0][temperature]} \
+        """
+
+
+rule write_tosca_slices:
+    input:
+        "results/{label}-powder-sim.json",
+    output:
+        "results/tosca-slice-{label}.projected.txt",
+        "results/tosca-slice-{label}.projected.json",
+        "results/tosca-slice-{label}.json",
+    conda:
+        "envs/euphonic.yml"
+    params:
+        prefix=(lambda w: f"results/tosca-slice-{w.label}"),
+    script:
+        "scripts/write_tosca_slices.py"
+
+
+rule plot_tosca_slices:
+    input:
+        full_spectrum="results/{label}-powder-sim.json",
+        masked_spectrum="results/tosca-slice-{label}.json",
+        projected_spectrum="results/tosca-slice-{label}.projected.json",
+    output:
+        "results/tosca-slice-{label}.pdf",
+    conda:
+        "envs/euphonic.yml"
+    params:
+        v_max=get_v_max,
+        cmap=config["cmap"],
+    script:
+        "scripts/plot_tosca_slices.py"

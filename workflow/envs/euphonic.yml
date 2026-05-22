@@ -1,0 +1,10 @@
+name: euphonic
+
+channels:
+- conda-forge
+
+dependencies:
+- python=3.14
+- euphonic=1.6.1
+- matplotlib=3.10.9
+- tqdm=4.66

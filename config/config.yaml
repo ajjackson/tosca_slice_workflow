@@ -1,0 +1,14 @@
+cmap: "magma"
+
+# # Intensity limit in 2-D colourmap plots
+v_max:
+  SiC-6H: 3.
+
+powder_params:
+  SiC-6H:
+    q_max: 10.
+    q_spacing: 0.2
+    q_broadening: 0.2
+    npts: 500
+    ebins: 1000
+    temperature: 15.
