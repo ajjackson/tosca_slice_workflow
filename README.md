@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20349290.svg)](https://doi.org/10.5281/zenodo.20349290)
+
 # Coherent INS simulation by numerical powder averaging
 
 This workflow simulates spectrum for the ISIS-TOSCA neutron
